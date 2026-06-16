@@ -1,5 +1,6 @@
 import { Settings, Image as ImageIcon, Users, Bookmark, MapPin, Calendar, ChevronRight } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 type Tab = "posts" | "teams" | "favorites";
@@ -65,6 +66,7 @@ const myFavorites = [
 
 export function ProfileScreen() {
   const [tab, setTab] = useState<Tab>("posts");
+  const navigate = useNavigate();
 
   return (
     <div className="flex flex-col h-full bg-slate-50 overflow-y-auto">
@@ -153,7 +155,11 @@ export function ProfileScreen() {
       {tab === "teams" && (
         <div className="flex flex-col gap-3 p-4 pb-8">
           {myTeams.map((team) => (
-            <div key={team.id} className="bg-white rounded-2xl overflow-hidden shadow-sm">
+            <div 
+              key={team.id} 
+              className="bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => navigate("/team-detail", { state: { team } })}
+            >
               <div className="relative h-32">
                 <ImageWithFallback src={team.cover} alt={team.title} className="w-full h-full object-cover" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
@@ -192,7 +198,11 @@ export function ProfileScreen() {
       {tab === "favorites" && (
         <div className="flex flex-col gap-3 p-4 pb-8">
           {myFavorites.map((camp) => (
-            <div key={camp.id} className="bg-white rounded-2xl overflow-hidden shadow-sm flex">
+            <div 
+              key={camp.id} 
+              className="bg-white rounded-2xl overflow-hidden shadow-sm flex cursor-pointer active:scale-[0.98] transition-transform"
+              onClick={() => navigate("/camp-detail", { state: { camp } })}
+            >
               <ImageWithFallback src={camp.cover} alt={camp.name} className="w-24 h-24 object-cover shrink-0" />
               <div className="flex-1 px-3 py-3 flex flex-col justify-between">
                 <div>

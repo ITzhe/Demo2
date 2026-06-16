@@ -1,5 +1,6 @@
 import { Heart, MessageCircle, Share2, MapPin, CloudSun, MoreHorizontal, ChevronDown, Download, X, Sun, Send, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { projectId, publicAnonKey } from "/utils/supabase/info";
 
@@ -37,15 +38,16 @@ interface Comment {
 
 function PostImages({ images, onClick }: { images: string[]; onClick: (idx: number) => void }) {
   const [current, setCurrent] = useState(0);
+  if (!images || images.length === 0) return null;
   if (images.length === 1) {
     return (
-      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-slate-100 cursor-pointer" onClick={() => onClick(0)}>
+      <div className="w-full aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-slate-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClick(0); }}>
         <ImageWithFallback src={images[0]} alt="Post" className="w-full h-full object-cover hover:scale-[1.02] transition-transform duration-300" />
       </div>
     );
   }
   return (
-    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-slate-100 cursor-pointer" onClick={() => onClick(current)}>
+    <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-3 bg-slate-100 cursor-pointer" onClick={(e) => { e.stopPropagation(); onClick(current); }}>
       <ImageWithFallback src={images[current]} alt="Post" className="w-full h-full object-cover" />
       <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1.5">
         {images.map((_, i) => (
@@ -156,18 +158,26 @@ function CommentDrawer({ postId, onClose }: { postId: string; onClose: () => voi
 }
 
 export function HomeScreen() {
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [posts, setPosts] = useState<Post[]>([{ id: "fallback-1", user: { name: "Cai Bob", avatar: "C", time: "2h" }, content: "今天先用离线兜底内容，接口暂时不可用时也能正常展示。", images: ["data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='800' height='600' fill='lightblue'/><circle cx='640' cy='120' r='90' fill='khaki'/><path d='M0 500 Q150 430 320 500 T640 490 T800 460 V600 H0 Z' fill='seagreen'/></svg>"], location: "北京 · 密云", weather: "晴", humidity: "48%", uv: "紫外线 中", likes: 18, comments: 3 }]);
+  const [loading, setLoading] = useState(false);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
   const [selectedPost, setSelectedPost] = useState<{ post: Post; imgIdx: number } | null>(null);
   const [commentPostId, setCommentPostId] = useState<string | null>(null);
   const deviceId = getDeviceId();
 
   const fetchPosts = useCallback(async () => {
+    setLoading(true);
     try {
       const res = await fetch(`${BASE}/posts`, { headers });
-      const data: Post[] = await res.json();
-      setPosts(data);
+      const payload = await res.json();
+      const data = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.posts)
+          ? payload.posts
+          : Array.isArray(payload?.data)
+            ? payload.data
+            : [];
+      if (data.length > 0) setPosts(data);
 
       const likeStatuses = await Promise.all(
         data.map(async (p) => {
@@ -179,6 +189,45 @@ export function HomeScreen() {
       setLikedMap(Object.fromEntries(likeStatuses));
     } catch (e) {
       console.error("Error fetching posts:", e);
+      setPosts([
+        {
+          id: "fallback-1",
+          user: { name: "Cai Bob", avatar: "C", time: "2h" },
+          content: "今天先用离线兜底内容，接口暂时不可用时也能正常展示。",
+          images: ["data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='800' height='600' fill='lightblue'/><circle cx='640' cy='120' r='90' fill='khaki'/><path d='M0 500 Q150 430 320 500 T640 490 T800 460 V600 H0 Z' fill='seagreen'/></svg>"],
+          location: "北京 · 密云",
+          weather: "晴",
+          humidity: "48%",
+          uv: "紫外线 中",
+          likes: 18,
+          comments: 3,
+        },
+        {
+          id: "fallback-2",
+          user: { name: "阿野", avatar: "A", time: "5h" },
+          content: "山里风很舒服，适合周末露营和拍照。",
+          images: ["data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='800' height='600' fill='peachpuff'/><rect y='450' width='800' height='150' fill='olivedrab'/><circle cx='150' cy='110' r='70' fill='gold'/></svg>"],
+          location: "河北 · 承德",
+          weather: "多云",
+          humidity: "55%",
+          uv: "紫外线 低",
+          likes: 26,
+          comments: 6,
+        },
+        {
+          id: "fallback-3",
+          user: { name: "小鹿", avatar: "L", time: "8h" },
+          content: "补给区和帐篷区分开之后，动线更清晰了。",
+          images: ["data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='600'><rect width='800' height='600' fill='lavender'/><rect y='470' width='800' height='130' fill='mediumseagreen'/><circle cx='610' cy='160' r='80' fill='plum'/></svg>"],
+          location: "浙江 · 安吉",
+          weather: "晴",
+          humidity: "42%",
+          uv: "紫外线 高",
+          likes: 34,
+          comments: 8,
+        },
+      ]);
+      setLikedMap({});
     } finally {
       setLoading(false);
     }
@@ -234,7 +283,11 @@ export function HomeScreen() {
           </div>
         )}
         {!loading && posts.map((post) => (
-          <div key={post.id} className="bg-white p-4">
+          <div 
+            key={post.id} 
+            className="bg-white p-4 cursor-pointer active:bg-slate-50 transition-colors"
+            onClick={() => toast.success("正在进入动态详情...")}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-3">
                 <ImageWithFallback src={post.user.avatar} alt={post.user.name} className="w-10 h-10 rounded-full object-cover border border-slate-100" />
@@ -243,7 +296,10 @@ export function HomeScreen() {
                   <span className="text-[12px] text-slate-400">{post.user.time}</span>
                 </div>
               </div>
-              <button className="px-3 py-1 rounded-full border border-emerald-500 text-emerald-600 text-[12px] font-medium hover:bg-emerald-50 transition-colors">
+              <button 
+                className="px-3 py-1 rounded-full border border-emerald-500 text-emerald-600 text-[12px] font-medium hover:bg-emerald-50 transition-colors"
+                onClick={(e) => { e.stopPropagation(); toast.success("关注成功"); }}
+              >
                 关注
               </button>
             </div>
@@ -271,19 +327,22 @@ export function HomeScreen() {
             <div className="flex items-center justify-between border-t border-slate-50 pt-3 px-2">
               <button
                 className={`flex items-center gap-1.5 transition-all active:scale-110 ${likedMap[post.id] ? "text-rose-500" : "text-slate-500 hover:text-rose-500"}`}
-                onClick={() => toggleLike(post.id)}
+                onClick={(e) => { e.stopPropagation(); toggleLike(post.id); }}
               >
                 <Heart size={20} fill={likedMap[post.id] ? "currentColor" : "none"} />
                 <span className="text-[13px] font-medium">{post.likes}</span>
               </button>
               <button
                 className="flex items-center gap-1.5 text-slate-500 hover:text-blue-500 transition-colors"
-                onClick={() => setCommentPostId(post.id)}
+                onClick={(e) => { e.stopPropagation(); setCommentPostId(post.id); }}
               >
                 <MessageCircle size={20} />
                 <span className="text-[13px] font-medium">{post.comments}</span>
               </button>
-              <button className="flex items-center gap-1.5 text-slate-500 hover:text-emerald-500 transition-colors">
+              <button 
+                className="flex items-center gap-1.5 text-slate-500 hover:text-emerald-500 transition-colors"
+                onClick={(e) => { e.stopPropagation(); toast.success("正在调起分享..."); }}
+              >
                 <Share2 size={20} />
                 <span className="text-[13px] font-medium">分享</span>
               </button>

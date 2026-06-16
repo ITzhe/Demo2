@@ -1,5 +1,6 @@
 import { ShoppingBag, MapPin, Calendar, Users as UsersIcon, Search, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 export function TeamScreen() {
@@ -93,7 +94,11 @@ export function TeamScreen() {
       {/* Team List */}
       <div className="flex flex-col gap-3 p-3">
         {teams.map((team) => (
-          <div key={team.id} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
+          <div 
+            key={team.id} 
+            className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 cursor-pointer active:scale-[0.98] transition-transform"
+            onClick={() => toast.success("正在进入队伍详情...")}
+          >
             <div className="flex items-start justify-between mb-3">
               <h3 className="font-bold text-[16px] text-slate-800 leading-snug pr-4">
                 {team.title}
@@ -140,7 +145,10 @@ export function TeamScreen() {
                   <span className="text-slate-700 font-medium">{team.memberCount}</span>
                   <span className="text-slate-400">/{team.maxMembers}</span>
                 </div>
-                <button className="px-4 py-1.5 bg-emerald-600 text-white text-[13px] font-medium rounded-full hover:bg-emerald-700 transition-colors">
+                <button 
+                  className="px-4 py-1.5 bg-emerald-600 text-white text-[13px] font-medium rounded-full hover:bg-emerald-700 transition-colors"
+                  onClick={(e) => { e.stopPropagation(); toast.success("正在进入报名页面..."); }}
+                >
                   报名
                 </button>
               </div>
